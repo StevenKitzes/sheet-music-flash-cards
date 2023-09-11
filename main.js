@@ -1,6 +1,7 @@
-const timeDefault = 4;
+const timeDefault = 3;
 var timeSeconds = timeDefault;
-var interval = setInterval(intervalFunction, timeSeconds * 1000);
+var interval = setInterval(intervalFunction, (timeSeconds * 1.5) * 1000);
+var timeout = null;
 const touchables = [];
 
 const bar = document.getElementById("bar");
@@ -20,11 +21,11 @@ function handleTimeInputChange(evt) {
     console.log("got NAN value in timer input");
     timeInput.value = timeDefault;
     timeSeconds = timeDefault;
-    interval = setInterval(intervalFunction, timeSeconds * 1000);
+    interval = setInterval(intervalFunction, (timeSeconds * 1.5) * 1000);
     return;
   }  
   timeSeconds = newVal;
-  interval = setInterval(intervalFunction, timeSeconds * 1000);
+  interval = setInterval(intervalFunction, (timeSeconds * 1.5) * 1000);
 }
 
 notes.forEach((note, idx) => {
@@ -42,6 +43,9 @@ notes.forEach((note, idx) => {
 
 // every card turn
 function intervalFunction() {
+  const noteNameElement = document.getElementById("note-name-display");
+  noteNameElement.innerHTML = '';
+
   const upperChecked = document.getElementById("upper").checked;
   const middleChecked = document.getElementById("middle").checked;
   const lowerChecked = document.getElementById("lower").checked;
@@ -63,9 +67,10 @@ function intervalFunction() {
       const noteElement = document.createElement('div');
       noteElement.classList.add('note-element');
       touchable.appendChild(noteElement);
+      timeout = setTimeout(() => {
+        noteNameElement.innerHTML = currentNote.name.toUpperCase();
+      }, timeSeconds * 1000);
     }
     else touchable.style.zIndex = 1;
   })
-
-  console.log(JSON.stringify(currentNote));
 };
