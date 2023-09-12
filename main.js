@@ -59,7 +59,7 @@ notes.forEach((note, idx) => {
     if (currentNote.name === note.name) {
       bar.style.backgroundColor = 'lightgreen';
       if (currentNote.fullName !== note.fullName  ) noteNameElement.innerHTML = note.fullName.toUpperCase();
-      touchable.appendChild(getNewNoteElement());
+      appendChildIfEmpty(touchable, getNewNoteElement());
     } else {
       bar.style.backgroundColor = 'lightpink';
     }
@@ -97,12 +97,12 @@ function intervalFunction() {
         timeout = setTimeout(() => {
           if (bar.style.backgroundColor !== 'lightgreen') {
             bar.style.backgroundColor = 'lightpink';
-            touchable.appendChild(getNewNoteElement());
+            appendChildIfEmpty(touchable, getNewNoteElement());
             currentNote = null;
           }
         }, timeSeconds * 1000);
       } else {
-        touchable.appendChild(getNewNoteElement());
+        appendChildIfEmpty(touchable, getNewNoteElement());
         timeout = setTimeout(() => {
           noteNameElement.innerHTML = currentNote.name.toUpperCase();
           noteNameElement.style.fontSize = '300px';
@@ -118,4 +118,8 @@ function getNewNoteElement() {
   const noteElement = document.createElement('div');
   noteElement.classList.add('note-element');
   return noteElement;
+}
+
+function appendChildIfEmpty(container, child) {
+  if (container.innerHTML == '') container.appendChild(child);
 }
