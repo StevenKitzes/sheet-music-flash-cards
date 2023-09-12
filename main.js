@@ -1,14 +1,20 @@
 const timeDefault = 3;
 var timeSeconds = timeDefault;
-var interval = setInterval(intervalFunction, (timeSeconds * 1.5) * 1000);
 var timeout = null;
 const touchables = [];
 var currentNote = null;
 
 const noteNameElement = document.getElementById("note-name-display");
-
 const modeGuess = document.getElementById("mode-guess");
 const modeFind = document.getElementById("mode-find");
+
+const upper = document.getElementById("upper");
+const staff = document.getElementById("staff");
+const lower = document.getElementById("lower");
+upper.checked = true;
+staff.checked = true;
+lower.checked = true;
+
 modeGuess.checked = true;
 var findMode = modeFind.checked;
 modeFind.addEventListener('change', (evt) => {
@@ -24,20 +30,17 @@ timeInput.value = timeDefault;
 timeInput.addEventListener("change", handleTimeInputChange)
 timeInput.addEventListener("keyup", handleTimeInputChange)
 
+var interval = setInterval(intervalFunction, (timeSeconds * 1.5) * 1000);
+
 function handleTimeInputChange(evt) {
-  console.log("change!");
   clearInterval(interval);
+  
   const newInput = evt.target.value;
-  console.log(newInput);
-  const newVal = parseFloat(newInput);
-  console.log("newVal", newVal)
+  var newVal = parseFloat(newInput);
   if (isNaN(newVal)) {
-    console.log("got NAN value in timer input");
-    timeInput.value = timeDefault;
-    timeSeconds = timeDefault;
-    interval = setInterval(intervalFunction, (timeSeconds * 1.5) * 1000);
-    return;
+    newVal = timeDefault;
   }  
+  
   timeSeconds = newVal;
   interval = setInterval(intervalFunction, (timeSeconds * 1.5) * 1000);
 }
@@ -73,31 +76,33 @@ function intervalFunction() {
   noteNameElement.innerHTML = '';
   bar.style.backgroundColor = 'white';
 
-  const upperChecked = document.getElementById("upper").checked;
-  const middleChecked = document.getElementById("middle").checked;
-  const lowerChecked = document.getElementById("lower").checked;
+  const upperChecked = upper.checked;
+  const staffChecked = staff.checked;
+  const lowerChecked = lower.checked;
 
   const noteOptions = notes.filter(note => {
     if (upperChecked && note.ledger === "upper") return true;
-    if (middleChecked && note.ledger === "middle") return true;
+    if (staffChecked && note.ledger === "staff") return true;
     if (lowerChecked && note.ledger === "lower") return true;
-    if (!upperChecked && !middleChecked && !lowerChecked) return true;
+    if (!upperChecked && !staffChecked && !lowerChecked) return true;
     return false;
   });
 
   const idx = Math.floor(Math.random() * noteOptions.length)
   currentNote = noteOptions[idx];
+  const fullName = currentNote.fullName;
   touchables.forEach((touchable, idx) => {
     touchable.innerHTML = '';
     if (currentNote.id == idx || (currentNote.name === notes[idx].name && findMode)) {
       touchable.style.zIndex = 5;
       if (findMode) {
-        noteNameElement.innerHTML = currentNote.fullName.toUpperCase();
+        noteNameElement.innerHTML = fullName.toUpperCase();
         noteNameElement.style.fontSize = '250px';
         timeout = setTimeout(() => {
           if (bar.style.backgroundColor !== 'lightgreen') {
             bar.style.backgroundColor = 'lightpink';
-            appendChildIfEmpty(touchable, getNewNoteElement());
+            if (notes[idx].fullName === fullName) appendChildIfEmpty(touchable, getNewWholeNoteElement());
+            else appendChildIfEmpty(touchable, getNewNoteElement());
             currentNote = null;
           }
         }, timeSeconds * 1000);
@@ -117,6 +122,11 @@ function intervalFunction() {
 function getNewNoteElement() {
   const noteElement = document.createElement('div');
   noteElement.classList.add('note-element');
+  return noteElement;
+}
+function getNewWholeNoteElement() {
+  const noteElement = document.createElement('div');
+  noteElement.classList.add('whole-note-element');
   return noteElement;
 }
 
