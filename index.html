@@ -15,6 +15,9 @@
         </div>
         <a class="header-button" href="mode-help.html" aria-label="How it works">?</a>
         <button type="button" class="header-button" id="open-settings" aria-label="Settings">&#9881;&#xFE0E;</button>
+        <div class="streak" id="streak" title="Streak" aria-live="polite" hidden>
+          <span class="streak-flame" aria-hidden="true">🔥</span><span id="streak-count">0</span>
+        </div>
       </div>
 
       <div class="bar" id="bar">
@@ -83,6 +86,14 @@
           <label>to <input type="number" inputmode="numeric" id="fret-to" min="0" class="small-input" /></label>
         </div>
         <div class="settings-error" id="fret-error" role="alert" hidden></div>
+
+        <div id="best-streak-section">
+          <div class="settings-label">Best streak:</div>
+          <div class="settings-row">
+            <span class="best-streak"><span aria-hidden="true">🔥</span> <span id="best-streak">0</span></span>
+            <button type="button" class="reset-streak-button" id="reset-streak">Reset streak</button>
+          </div>
+        </div>
 
         <div class="settings-row">
           <button type="button" class="wake-button" id="wake-lock" aria-pressed="false">Keep screen awake: Off</button>

@@ -106,6 +106,65 @@ if (validateFretSettings()) {
 applySettings();
 var findMode = modeFind.checked;
 
+// ---------- Streak (Find mode only: consecutive correct picks) ----------
+
+const streakElement = document.getElementById("streak");
+const streakCountElement = document.getElementById("streak-count");
+const bestStreakElement = document.getElementById("best-streak");
+const bestStreakKey = "sheet-music-flash-cards-best-streak";
+var streak = 0;
+var bestStreak = loadBestStreak();
+
+// The best streak is persisted on its own key so it survives reloads; the current streak is not.
+function loadBestStreak() {
+  try {
+    const saved = parseInt(localStorage.getItem(bestStreakKey), 10);
+    return saved > 0 ? saved : 0;
+  } catch (err) {
+    return 0;
+  }
+}
+
+function setBestStreak(value) {
+  bestStreak = value;
+  bestStreakElement.textContent = bestStreak;
+  try {
+    localStorage.setItem(bestStreakKey, String(bestStreak));
+  } catch (err) {
+    // Storage unavailable (e.g. private browsing); the best streak just won't persist.
+  }
+}
+
+// Clears both counters: leaving the current streak running would immediately re-set the best.
+document.getElementById("reset-streak").addEventListener("click", () => {
+  if (!confirm("Reset your streak and best streak to 0?")) return;
+  setStreak(0);
+  setBestStreak(0);
+});
+
+// Only Find mode has an answer to judge, so all streak UI (main page and settings) is hidden in Guess mode.
+const bestStreakSection = document.getElementById("best-streak-section");
+function updateStreakVisibility() {
+  streakElement.hidden = !findMode;
+  bestStreakSection.hidden = !findMode;
+}
+
+function setStreak(value) {
+  const animation = value > streak ? "streak-bump" : value < streak ? "streak-reset" : null;
+  streak = value;
+  streakCountElement.textContent = streak;
+  streakElement.classList.toggle("streak-zero", streak === 0);
+  if (streak > bestStreak) setBestStreak(streak);
+  if (!animation) return;
+  streakElement.classList.remove("streak-bump", "streak-reset");
+  void streakElement.offsetWidth; // restart the animation if it's the same class again
+  streakElement.classList.add(animation);
+}
+
+updateStreakVisibility();
+setStreak(0);
+bestStreakElement.textContent = bestStreak;
+
 // If the fret range was running to the old max (e.g. the default full range), keep it running to the new max.
 var previousMaxFret = parseInt(maxFretSelect.value, 10);
 maxFretSelect.addEventListener("change", () => {
@@ -133,11 +192,13 @@ function showFretSettingsError() {
 
 modeFind.addEventListener("change", () => {
   findMode = true;
+  updateStreakVisibility();
   saveSettings();
   restartCards();
 });
 modeGuess.addEventListener("change", () => {
   findMode = false;
+  updateStreakVisibility();
   saveSettings();
   restartCards();
 });
@@ -283,6 +344,8 @@ function revealFindAnswer(target, correct) {
   currentNote = null; // card is over; ignore further input
   endPointer();
   bar.style.backgroundColor = correct ? "lightgreen" : "lightpink";
+  setStreak(correct ? streak + 1 : 0);
+  showFretPositions(target);
   notes.forEach((n, idx) => {
     if (n.name !== target.name) return;
     touchables[idx].innerHTML = "";

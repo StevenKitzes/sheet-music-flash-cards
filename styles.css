@@ -32,6 +32,42 @@ button {
   padding: 6px 8px 0;
 }
 
+/* ---------- Streak counter (last item in the header row) ---------- */
+
+.streak {
+  align-items: center;
+  color: darkolivegreen;
+  display: flex;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+  gap: 2px;
+  height: 38px; /* same as the header buttons, so it lines up with them */
+  user-select: none;
+}
+
+.streak-zero .streak-flame {
+  filter: grayscale(0.6);
+  opacity: 0.8;
+}
+
+.streak-bump {
+  animation: streak-bump 0.35s ease-out;
+}
+
+.streak-reset {
+  animation: streak-reset 0.4s ease-in-out;
+}
+
+@keyframes streak-bump {
+  40% { transform: scale(1.35); }
+}
+
+@keyframes streak-reset {
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
+}
+
 /* ---------- Header: mode toggle, help, settings ---------- */
 
 .header {
@@ -285,7 +321,15 @@ input[aria-invalid="true"] {
   border-color: gray;
 }
 
+.best-streak {
+  color: darkolivegreen;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  font-weight: bold;
+}
+
 .wake-button,
+.reset-streak-button,
 .done-button {
   background-color: white;
   border: 1px solid darkolivegreen;
