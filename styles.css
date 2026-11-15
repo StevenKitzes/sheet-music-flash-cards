@@ -1,19 +1,128 @@
+/* The `hidden` attribute must win over any display rule below. */
+[hidden] {
+  display: none !important;
+}
+
 a {
   color: darkolivegreen;
   text-decoration: none;
 }
 
 body {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  background-color: white;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, Helvetica, sans-serif;
   margin: 0;
+  touch-action: manipulation; /* no double-tap zoom */
 }
 
-.bar {
+/* iOS zooms the page when focusing inputs smaller than 16px. */
+input,
+select,
+button {
+  font-family: inherit;
+  font-size: 16px;
+}
+
+.page {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px 0;
+}
+
+/* ---------- Header: mode toggle, help, settings ---------- */
+
+.header {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding-bottom: 6px;
+}
+
+.mode-toggle {
+  border: 1px solid darkolivegreen;
+  border-radius: 6px;
+  display: flex;
+  overflow: hidden;
+}
+
+.mode-toggle input {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.mode-toggle label {
+  color: darkolivegreen;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 8px 18px;
+}
+
+.mode-toggle input:checked + label {
+  background-color: darkolivegreen;
+  color: white;
+}
+
+.mode-toggle input:focus-visible + label {
+  outline: 2px solid darkolivegreen;
+  outline-offset: -4px;
+}
+
+#open-settings {
+  font-size: 24px;
+}
+
+.header-button {
+  align-items: center;
   background-color: white;
-  display: inline-block;
-  height: 360px;
+  border: 1px solid darkolivegreen;
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: darkolivegreen;
+  cursor: pointer;
+  display: flex;
+  font-size: 18px;
+  height: 38px;
+  justify-content: center;
+  padding: 0;
+  width: 38px;
+}
+
+/* ---------- Staff ---------- */
+/* Every staff dimension derives from --row (px per line/space step), set by layout() in main.js,
+   along with --bar-w / --bar-h (visible staff size). */
+
+.bar {
+  --row: 15px;
+  --bar-w: 320px;
+  --bar-h: 360px;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  background-color: white;
+  height: var(--bar-h);
+  overflow: hidden;
   position: relative;
+  touch-action: none; /* sliding on the staff adjusts the answer instead of scrolling */
   transition: background-color 1s;
-  width: 320px;
+  user-select: none;
+  width: var(--bar-w);
+}
+
+.staff {
+  height: calc(24 * var(--row));
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.bar-display {
+  box-sizing: border-box;
+  height: var(--row);
+  margin: 0 20px;
 }
 
 .bar-lower-line {
@@ -25,87 +134,186 @@ body {
   border-right: 4px solid black;
 }
 
-.bar-display {
+.show-ledger {
+  border-bottom: 1px solid black;
   box-sizing: border-box;
-  height: 15px;
-  margin: 0 20px;
-  width: 280px;
+  height: 100%;
+  margin: 0 auto;
+  width: calc(var(--row) * 2.7);
 }
 
-.checkbox-span {
-  margin-right: 1em;
-}
-
-.footer {
-  align-content: center;
+.touchable {
+  align-items: center;
   display: flex;
-  flex-direction: row;
+  height: calc(var(--row) * 2);
   justify-content: center;
-  padding: 0.5em;
+  left: 20px;
+  position: absolute;
+  right: 20px;
+  z-index: 1;
 }
 
-.footer-options {
-  align-content: center;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 0.5em 1.5em;
-  justify-content: center;
-  padding: 0.5em;
-}
-
-.footer-option {
-  white-space: nowrap;
-}
-
-.fret-positions {
-  font-family: Arial, Helvetica, sans-serif;
-  font-size: 0.9em;
-  line-height: 1.4;
-  max-width: 320px;
-  min-height: 2.8em;
-  padding: 0.5em 16px 0;
-  text-align: center;
-}
-
-h3, h4 {
-  margin: 6px;
+.note-element,
+.whole-note-element {
+  border-radius: 50%;
+  box-sizing: border-box;
+  height: calc(var(--row) * 1.33);
+  width: calc(var(--row) * 2);
 }
 
 .note-element {
   background-color: black;
-  border-top-left-radius: 15px 10px;
-  border-top-right-radius: 15px 10px;
-  border-bottom-left-radius: 15px 10px;
-  border-bottom-right-radius: 15px 10px;
-  height: 20px;
-  margin-left: 125px;
-  margin-top: 5px;
-  width: 30px;
 }
 
+.whole-note-element {
+  border: max(2px, calc(var(--row) * 0.2)) solid black;
+}
+
+.preview {
+  opacity: 0.35;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Large translucent letter behind the staff, sized to fit the visible staff. */
 .note-name-display {
-  /* background-color: lightsalmon; */
+  align-items: center;
   color: rgba(255, 160, 122, 0.5);
   display: flex;
-  align-items: center;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 75px;
-  height: 360px;
+  height: 100%;
   justify-content: center;
-  left: 0px;
+  left: 0;
+  line-height: 1;
   position: absolute;
-  top: 0px;
-  width: 320px;
+  top: 0;
+  width: 100%;
   z-index: 0;
 }
 
-.options {
-  align-content: center;
+.name-ready {
+  font-size: min(calc(var(--bar-h) * 0.21), calc(var(--bar-w) * 0.26));
+}
+
+.name-find {
+  font-size: min(calc(var(--bar-h) * 0.69), calc(var(--bar-w) * 0.72));
+}
+
+.name-guess {
+  font-size: min(calc(var(--bar-h) * 0.83), calc(var(--bar-w) * 1.2));
+}
+
+/* ---------- Review line ---------- */
+
+.fret-positions {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  max-width: 320px;
+  min-height: 4.2em; /* room for three lines, so the staff doesn't jump when it fills in */
+  padding: 6px 8px 0;
+  text-align: center;
+}
+
+.fret-pos {
+  white-space: nowrap;
+}
+
+.footer {
+  font-size: 12px;
+  padding: 4px 0 6px;
+}
+
+/* ---------- Settings panel ---------- */
+
+.settings-panel {
+  background-color: white;
+  inset: 0;
+  overflow-y: auto;
+  position: fixed;
+  z-index: 10;
+}
+
+.settings-content {
+  margin: 0 auto;
+  max-width: 360px;
+  padding: 12px 16px 24px;
+}
+
+.settings-content h3 {
+  margin: 4px 0 12px;
+  text-align: center;
+}
+
+.settings-label {
+  font-weight: bold;
+  margin-top: 12px;
+}
+
+.settings-row {
+  align-items: center;
   display: flex;
-  flex-direction: row;
-  justify-content: center;
-  padding: 4px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 6px 0;
+}
+
+.checkbox-label {
+  align-items: center;
+  display: flex;
+  gap: 4px;
+}
+
+.small-input {
+  box-sizing: border-box;
+  width: 56px;
+}
+
+.settings-error {
+  color: #b00020;
+  font-size: 14px;
+  padding: 2px 0 4px;
+}
+
+input[aria-invalid="true"] {
+  border-color: #b00020;
+  outline-color: #b00020;
+}
+
+.done-button:disabled {
+  background-color: gray;
+  border-color: gray;
+}
+
+.wake-button,
+.done-button {
+  background-color: white;
+  border: 1px solid darkolivegreen;
+  border-radius: 6px;
+  color: darkolivegreen;
+  padding: 8px 12px;
+}
+
+.wake-button[aria-pressed="true"],
+.done-button {
+  background-color: darkolivegreen;
+  color: white;
+}
+
+.wake-button:disabled {
+  border-color: gray;
+  color: gray;
+}
+
+.done-button {
+  margin: 12px auto 0;
+  padding: 10px 32px;
+}
+
+/* ---------- Help page ---------- */
+
+h3, h4 {
+  margin: 6px;
 }
 
 p {
@@ -113,61 +321,4 @@ p {
   max-width: 500px;
   padding: 0px 2rem;
   text-align: justify;
-}
-
-.page {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-}
-
-.separator {
-  margin: 8px 4px 0px;
-  width: 300px;
-}
-
-.show-ledger {
-  border-bottom: 1px solid black;
-  height: 100%;
-  margin: 0 auto;
-  width: 40px;
-}
-
-.small-link {
-  border: 1px solid darkolivegreen;
-  border-radius: 4px;
-  font-size: 0.8em;
-  margin-bottom: 2px;
-  padding: 4px 4px 2px;
-}
-
-.touchable {
-  /* border: 1px solid red; */
-  box-sizing: border-box;
-  height: 30px;
-  left: 20px;
-  position: absolute;
-  width: 280px;
-}
-
-.typography {
-  align-items: center;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  margin: 0px 4px 0px;
-  padding: 0.5em 0.5em 0;
-}
-
-.whole-note-element {
-  border: 3px solid black;
-  border-top-left-radius: 15px 10px;
-  border-top-right-radius: 15px 10px;
-  border-bottom-left-radius: 15px 10px;
-  border-bottom-right-radius: 15px 10px;
-  box-sizing: border-box;
-  height: 20px;
-  margin-left: 125px;
-  margin-top: 5px;
-  width: 30px;
 }

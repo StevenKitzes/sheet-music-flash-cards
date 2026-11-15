@@ -1,64 +1,99 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <meta name="viewport" content="width=device-width" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sheet Music Flash Cards</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <div class="page">
-      <div class="typography">Mode:&nbsp;&nbsp;<a class="small-link" href="mode-help.html">How it works</a></div>
-      <div class="mode-container">
-        <input type="radio" name="mode" class="mode-radio" id="mode-guess" /> Guess
-        <input type="radio" name="mode" class="mode-radio" id="mode-find" /> Find
+    <div class="page" id="page">
+      <div class="header">
+        <div class="mode-toggle" role="radiogroup" aria-label="Mode">
+          <input type="radio" name="mode" id="mode-guess" /><label for="mode-guess">Guess</label>
+          <input type="radio" name="mode" id="mode-find" /><label for="mode-find">Find</label>
+        </div>
+        <a class="header-button" href="mode-help.html" aria-label="How it works">?</a>
+        <button type="button" class="header-button" id="open-settings" aria-label="Settings">&#9881;&#xFE0E;</button>
       </div>
-      <hr class="separator" />
-      <div class="typography">Include these notes:</div>
-      <div class="options">
-        <span class="checkbox-span"><input id="upper" type="checkbox" /> Upper</span>
-        <span class="checkbox-span"><input id="staff" type="checkbox" /> Staff</span>
-        <span class="checkbox-span"><input id="lower" type="checkbox" /> Lower</span>
-      </div>
+
       <div class="bar" id="bar">
-        <div class="note-name-display" id="note-name-display">Ready?</div>
-        <div class="bar-display"></div>
-        <div class="bar-display"><div class="show-ledger"></div></div>
-        <div class="bar-display"></div>
-        <div class="bar-display"><div class="show-ledger"></div></div>
-        <div class="bar-display"></div>
-        <div class="bar-display"><div class="show-ledger"></div></div>
-        <div class="bar-display"></div>
-        <div class="bar-display bar-lower-line"></div>
-        <div class="bar-display bar-sided"></div>
-        <div class="bar-display bar-sided bar-lower-line"></div>
-        <div class="bar-display bar-sided"></div>
-        <div class="bar-display bar-sided bar-lower-line"></div>
-        <div class="bar-display bar-sided"></div>
-        <div class="bar-display bar-sided bar-lower-line"></div>
-        <div class="bar-display bar-sided"></div>
-        <div class="bar-display bar-sided bar-lower-line"></div>
-        <div class="bar-display"></div>
-        <div class="bar-display"><div class="show-ledger"></div></div>
-        <div class="bar-display"></div>
-        <div class="bar-display"><div class="show-ledger"></div></div>
-        <div class="bar-display"></div>
-        <div class="bar-display"><div class="show-ledger"></div></div>
-        <div class="bar-display"></div>
-        <div class="bar-display"></div>
+        <div class="note-name-display name-ready" id="note-name-display">Ready?</div>
+        <div class="staff" id="staff-inner">
+          <div class="bar-display"></div>
+          <div class="bar-display"><div class="show-ledger"></div></div>
+          <div class="bar-display"></div>
+          <div class="bar-display"><div class="show-ledger"></div></div>
+          <div class="bar-display"></div>
+          <div class="bar-display"><div class="show-ledger"></div></div>
+          <div class="bar-display"></div>
+          <div class="bar-display bar-lower-line"></div>
+          <div class="bar-display bar-sided"></div>
+          <div class="bar-display bar-sided bar-lower-line"></div>
+          <div class="bar-display bar-sided"></div>
+          <div class="bar-display bar-sided bar-lower-line"></div>
+          <div class="bar-display bar-sided"></div>
+          <div class="bar-display bar-sided bar-lower-line"></div>
+          <div class="bar-display bar-sided"></div>
+          <div class="bar-display bar-sided bar-lower-line"></div>
+          <div class="bar-display"></div>
+          <div class="bar-display"><div class="show-ledger"></div></div>
+          <div class="bar-display"></div>
+          <div class="bar-display"><div class="show-ledger"></div></div>
+          <div class="bar-display"></div>
+          <div class="bar-display"><div class="show-ledger"></div></div>
+          <div class="bar-display"></div>
+          <div class="bar-display"></div>
+        </div>
       </div>
+
       <div class="fret-positions" id="fret-positions"></div>
-      <div class="footer-options">
-        <span class="footer-option">Card seconds:&nbsp;<input type="text" id="time" style="width: 40px;"/></span>
-        <span class="footer-option">Review seconds:&nbsp;<input type="text" id="review-time" style="width: 40px;"/></span>
-        <span class="footer-option">Max fret:&nbsp;<select id="max-fret">
-          <option value="12">12</option>
-          <option value="17" selected>17</option>
-        </select></span>
-        <span class="footer-option">Show frets:&nbsp;<input type="number" id="fret-from" min="0" style="width: 40px;"/>&nbsp;to&nbsp;<input type="number" id="fret-to" min="0" style="width: 40px;"/></span>
-      </div>
+
       <div class="footer">
         A cute li'l project by&nbsp;<a href="https://github.com/stevenkitzes"><strong>Steven Kitzes</strong></a>
       </div>
     </div>
+
+    <div class="settings-panel" id="settings-panel" hidden>
+      <div class="settings-content">
+        <h3>Settings</h3>
+
+        <div class="settings-label">Include these notes:</div>
+        <div class="settings-row">
+          <label class="checkbox-label"><input id="upper" type="checkbox" /> Upper</label>
+          <label class="checkbox-label"><input id="staff" type="checkbox" /> Staff</label>
+          <label class="checkbox-label"><input id="lower" type="checkbox" /> Lower</label>
+        </div>
+
+        <div class="settings-label">Timing:</div>
+        <div class="settings-row">
+          <label>Card seconds <input type="text" inputmode="decimal" id="time" class="small-input" /></label>
+          <label>Review seconds <input type="text" inputmode="decimal" id="review-time" class="small-input" /></label>
+        </div>
+
+        <div class="settings-label">Guitar frets:</div>
+        <div class="settings-row">
+          <label>Max fret <select id="max-fret">
+            <option value="12">12</option>
+            <option value="17" selected>17</option>
+          </select></label>
+        </div>
+        <div class="settings-row">
+          <label>Show frets <input type="number" inputmode="numeric" id="fret-from" min="0" class="small-input" /></label>
+          <label>to <input type="number" inputmode="numeric" id="fret-to" min="0" class="small-input" /></label>
+        </div>
+        <div class="settings-error" id="fret-error" role="alert" hidden></div>
+
+        <div class="settings-row">
+          <button type="button" class="wake-button" id="wake-lock" aria-pressed="false">Keep screen awake: Off</button>
+        </div>
+
+        <div class="settings-row">
+          <button type="button" class="done-button" id="close-settings">Done</button>
+        </div>
+      </div>
+    </div>
+
     <script type="text/javascript" src="notes.js"></script>
     <script type="text/javascript" src="main.js"></script>
   </body>
