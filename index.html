@@ -20,7 +20,6 @@
       </div>
       <div class="bar" id="bar">
         <div class="note-name-display" id="note-name-display">Ready?</div>
-        <div class="touchable"></div>
         <div class="bar-display"></div>
         <div class="bar-display"><div class="show-ledger"></div></div>
         <div class="bar-display"></div>
@@ -46,8 +45,15 @@
         <div class="bar-display"></div>
         <div class="bar-display"></div>
       </div>
+      <div class="fret-positions" id="fret-positions"></div>
       <div class="footer-options">
-        <span>Duration in seconds:&nbsp;<input type="text" id="time" style="width: 40px;"/></span>
+        <span class="footer-option">Card seconds:&nbsp;<input type="text" id="time" style="width: 40px;"/></span>
+        <span class="footer-option">Review seconds:&nbsp;<input type="text" id="review-time" style="width: 40px;"/></span>
+        <span class="footer-option">Max fret:&nbsp;<select id="max-fret">
+          <option value="12">12</option>
+          <option value="17" selected>17</option>
+        </select></span>
+        <span class="footer-option">Show frets:&nbsp;<input type="number" id="fret-from" min="0" style="width: 40px;"/>&nbsp;to&nbsp;<input type="number" id="fret-to" min="0" style="width: 40px;"/></span>
       </div>
       <div class="footer">
         A cute li'l project by&nbsp;<a href="https://github.com/stevenkitzes"><strong>Steven Kitzes</strong></a>
