@@ -59,7 +59,10 @@
 
     <div class="settings-panel" id="settings-panel" hidden>
       <div class="settings-content">
-        <h3>Settings</h3>
+        <div class="settings-header">
+          <h3>Settings</h3>
+          <button type="button" class="done-button" id="close-settings">Done</button>
+        </div>
 
         <div class="settings-label">Include these notes:</div>
         <div class="settings-row">
@@ -68,13 +71,29 @@
           <label class="checkbox-label"><input id="lower" type="checkbox" /> Lower</label>
         </div>
 
-        <div class="settings-label">Timing:</div>
-        <div class="settings-row">
-          <label>Card seconds <input type="text" inputmode="decimal" id="time" class="small-input" /></label>
-          <label>Review seconds <input type="text" inputmode="decimal" id="review-time" class="small-input" /></label>
+        <div class="settings-row settings-row-labeled">
+          <label class="settings-label" for="key">Key:</label>
+          <select id="key"></select>
         </div>
 
-        <div class="settings-label">Guitar frets:</div>
+        <div class="settings-label">Note accidentals:</div>
+        <div class="settings-row">
+          <label class="checkbox-label"><input id="sharps" type="checkbox" /> Sharp &#9839;</label>
+          <label class="checkbox-label"><input id="flats" type="checkbox" /> Flat &#9837;</label>
+          <label class="checkbox-label"><input id="naturals" type="checkbox" /> Natural &#9838;</label>
+        </div>
+        <div class="settings-hint">Naturals only appear in keys other than C, on notes the key signature changes.</div>
+
+        <div class="settings-row settings-row-labeled">
+          <span class="settings-label">Seconds:</span>
+          <label>Card <input type="text" inputmode="decimal" id="time" class="small-input" aria-label="Card seconds" /></label>
+          <label>Review <input type="text" inputmode="decimal" id="review-time" class="small-input" aria-label="Review seconds" /></label>
+        </div>
+
+        <div class="settings-row settings-row-labeled">
+          <span class="settings-label">Guitar frets:</span>
+          <label class="checkbox-label">Show: <input id="guitar-hints" type="checkbox" /></label>
+        </div>
         <div class="settings-row">
           <label>Max fret <select id="max-fret">
             <option value="12">12</option>
@@ -88,19 +107,15 @@
         <div class="settings-error" id="fret-error" role="alert" hidden></div>
 
         <div id="best-streak-section">
-          <div class="settings-label">Best streak:</div>
-          <div class="settings-row">
+          <div class="settings-row settings-row-labeled">
+            <span class="settings-label">Best streak:</span>
             <span class="best-streak"><span aria-hidden="true">🔥</span> <span id="best-streak">0</span></span>
-            <button type="button" class="reset-streak-button" id="reset-streak">Reset streak</button>
+            <button type="button" class="reset-streak-button" id="reset-streak" aria-label="Reset streak">Reset</button>
           </div>
         </div>
 
         <div class="settings-row">
           <button type="button" class="wake-button" id="wake-lock" aria-pressed="false">Keep screen awake: Off</button>
-        </div>
-
-        <div class="settings-row">
-          <button type="button" class="done-button" id="close-settings">Done</button>
         </div>
       </div>
     </div>

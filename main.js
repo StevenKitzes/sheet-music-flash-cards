@@ -13,6 +13,50 @@ const guitarStrings = [
 ];
 const letterSemitones = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
 
+// The 15 standard key signatures. count > 0 is the number of sharps, < 0 the number of flats.
+const keys = [
+  { value: "C", label: "C major / A minor", count: 0 },
+  { value: "G", label: "G major / E minor", count: 1 },
+  { value: "D", label: "D major / B minor", count: 2 },
+  { value: "A", label: "A major / F\u266F minor", count: 3 },
+  { value: "E", label: "E major / C\u266F minor", count: 4 },
+  { value: "B", label: "B major / G\u266F minor", count: 5 },
+  { value: "F#", label: "F\u266F major / D\u266F minor", count: 6 },
+  { value: "C#", label: "C\u266F major / A\u266F minor", count: 7 },
+  { value: "F", label: "F major / D minor", count: -1 },
+  { value: "Bb", label: "B\u266D major / G minor", count: -2 },
+  { value: "Eb", label: "E\u266D major / C minor", count: -3 },
+  { value: "Ab", label: "A\u266D major / F minor", count: -4 },
+  { value: "Db", label: "D\u266D major / B\u266D minor", count: -5 },
+  { value: "Gb", label: "G\u266D major / E\u266D minor", count: -6 },
+  { value: "Cb", label: "C\u266D major / A\u266D minor", count: -7 },
+];
+const sharpOrder = "fcgdaeb";
+const flatOrder = "beadgcf";
+// Staff position (note id) of each key-signature accidental, in the standard treble clef layout.
+const keySigSharpIds = { f: 7, c: 10, g: 6, d: 9, a: 12, e: 8, b: 11 };
+const keySigFlatIds = { b: 11, e: 8, a: 12, d: 9, g: 13, c: 10, f: 14 };
+// Horizontal spacing between key-signature accidentals, in rows.
+const keySigStep = { sharp: 1.45, flat: 1.3 };
+const accidentalSymbols = { "1": "\u266F", "-1": "\u266D", "0": "" };
+
+// SVG drawings of each accidental, 6 rows tall with the note position at the vertical center.
+const accidentalSvgs = {
+  sharp: '<svg viewBox="0 0 1.4 6" fill="none" stroke="currentColor">' +
+    '<line x1="0.45" y1="0.9" x2="0.45" y2="5.3" stroke-width="0.13"/>' +
+    '<line x1="0.95" y1="0.7" x2="0.95" y2="5.1" stroke-width="0.13"/>' +
+    '<line x1="0.05" y1="2.6" x2="1.35" y2="2.15" stroke-width="0.38"/>' +
+    '<line x1="0.05" y1="3.85" x2="1.35" y2="3.4" stroke-width="0.38"/></svg>',
+  flat: '<svg viewBox="0 0 1.3 6" fill="none" stroke="currentColor">' +
+    '<line x1="0.2" y1="0" x2="0.2" y2="3.8" stroke-width="0.14"/>' +
+    '<path d="M0.2,3.8 C1.6,2.95 1.35,1.9 0.2,2.6" stroke-width="0.26"/></svg>',
+  natural: '<svg viewBox="0 0 1.3 6" fill="currentColor">' +
+    '<rect x="0.15" y="0.8" width="0.15" height="3.2"/>' +
+    '<rect x="1.0" y="2.2" width="0.15" height="3.0"/>' +
+    '<polygon points="0.15,2.75 1.15,2.4 1.15,2.0 0.15,2.35"/>' +
+    '<polygon points="0.15,4.0 1.15,3.65 1.15,3.25 0.15,3.6"/></svg>',
+};
+
 // Staff geometry. The staff is drawn as 24 rows; note i is centered on the bottom edge of row i,
 // i.e. at y = row * (i + 1). The row height is computed to fit the screen (see layout()).
 const minRowPx = 8;
@@ -28,7 +72,8 @@ var reviewSeconds = reviewDefault; // how long the revealed answer stays up befo
 var revealTimeout = null;
 var nextCardTimeout = null;
 const touchables = [];
-var currentNote = null;
+var currentCard = null; // { note, alter, written } while a card is live; null between cards
+var padPx = 0;          // extra space above the staff so a key signature isn't clipped
 
 const page = document.getElementById("page");
 const bar = document.getElementById("bar");
@@ -46,6 +91,18 @@ const reviewInput = document.getElementById("review-time");
 const maxFretSelect = document.getElementById("max-fret");
 const fretFromInput = document.getElementById("fret-from");
 const fretToInput = document.getElementById("fret-to");
+const keySelect = document.getElementById("key");
+const sharpsInput = document.getElementById("sharps");
+const flatsInput = document.getElementById("flats");
+const naturalsInput = document.getElementById("naturals");
+const guitarHintsInput = document.getElementById("guitar-hints");
+
+keys.forEach(key => {
+  const option = document.createElement("option");
+  option.value = key.value;
+  option.textContent = key.label;
+  keySelect.appendChild(option);
+});
 
 // ---------- Settings (persisted in localStorage) ----------
 
@@ -66,6 +123,11 @@ function loadSettings() {
   maxFretSelect.value = saved.maxFret === "12" ? "12" : "17";
   fretFromInput.value = saved.fretFrom != null ? saved.fretFrom : 0;
   fretToInput.value = saved.fretTo != null ? saved.fretTo : maxFretSelect.value;
+  keySelect.value = keys.some(k => k.value === saved.key) ? saved.key : "C";
+  sharpsInput.checked = saved.sharps === true;
+  flatsInput.checked = saved.flats === true;
+  naturalsInput.checked = saved.naturals === true;
+  guitarHintsInput.checked = saved.guitarHints !== false;
 }
 
 function saveSettings() {
@@ -80,6 +142,11 @@ function saveSettings() {
       maxFret: maxFretSelect.value,
       fretFrom: fretFromInput.value,
       fretTo: fretToInput.value,
+      key: keySelect.value,
+      sharps: sharpsInput.checked,
+      flats: flatsInput.checked,
+      naturals: naturalsInput.checked,
+      guitarHints: guitarHintsInput.checked,
     }));
   } catch (err) {
     // Storage unavailable (e.g. private browsing); settings just won't persist.
@@ -90,6 +157,13 @@ function applySettings() {
   timeSeconds = parsePositiveSeconds(timeInput.value, timeDefault);
   reviewSeconds = parsePositiveSeconds(reviewInput.value, reviewDefault);
   fretFromInput.max = fretToInput.max = maxFretSelect.value;
+  renderKeySignature();
+  updateGuitarInputs();
+}
+
+// With guitar hints off, the fret settings don't apply, so they're grayed out.
+function updateGuitarInputs() {
+  [maxFretSelect, fretFromInput, fretToInput].forEach(el => { el.disabled = !guitarHintsInput.checked; });
 }
 
 function parsePositiveSeconds(input, fallback) {
@@ -180,7 +254,13 @@ maxFretSelect.addEventListener("change", () => {
 const fretErrorElement = document.getElementById("fret-error");
 const closeSettingsButton = document.getElementById("close-settings");
 [fretFromInput, fretToInput].forEach(el => el.addEventListener("input", showFretSettingsError));
-[upper, staff, lower].forEach(el => el.addEventListener("change", showFretSettingsError));
+// Key and accidentals change which notes are playable in the fret range, so they're validated too.
+[upper, staff, lower, keySelect, sharpsInput, flatsInput, naturalsInput]
+  .forEach(el => el.addEventListener("change", showFretSettingsError));
+guitarHintsInput.addEventListener("change", () => {
+  updateGuitarInputs();
+  showFretSettingsError();
+});
 
 function showFretSettingsError() {
   const error = validateFretSettings();
@@ -233,19 +313,39 @@ function layout() {
   const range = getVisibleRange();
   visibleLo = range.lo;
   visibleHi = range.hi;
+  // The key signature's sharp on G (just above the top line) pokes above the staff, so when the
+  // upper ledger area is hidden, leave a little room for it.
+  const keySig = getKeySignature();
+  const padRows = keySig.length > 0 && visibleLo === staffLo ? 1.5 : 0;
   // Visible region runs from the top of note lo's band to the bottom of note hi's band.
-  const visibleRows = visibleHi - visibleLo + 2;
+  const visibleRows = visibleHi - visibleLo + 2 + padRows;
 
   const barWidth = Math.min(320, window.innerWidth - 16);
   const otherContentHeight = page.offsetHeight - bar.offsetHeight;
   const availableHeight = window.innerHeight - otherContentHeight - 4;
   rowPx = Math.max(minRowPx, Math.min(maxRowPx, Math.floor(availableHeight / visibleRows)));
 
+  // The key signature and the note column (head plus its accidental) must fit side by side, so a
+  // long key signature can shrink the staff a bit.
+  const keySigRows = keySig.length > 0 ? keySig.length * keySigStep[keySig[0].type] + 1 : 0;
+  if (keySigRows > 0) {
+    const noteColumnRows = 6.6;
+    rowPx = Math.max(minRowPx, Math.min(rowPx, Math.floor((barWidth - 48) / (keySigRows + noteColumnRows))));
+  }
+
   bar.style.setProperty("--row", `${rowPx}px`);
   bar.style.setProperty("--bar-w", `${barWidth}px`);
+  bar.style.setProperty("--keysig-w", keySigRows > 0 ? `${keySigRows * rowPx + 8}px` : "0px");
   // Minus 1px so the ledger line just past the last visible note (which sits on that edge) isn't shown.
   bar.style.setProperty("--bar-h", `${visibleRows * rowPx - 1}px`);
-  staffInner.style.top = `${-visibleLo * rowPx}px`;
+  padPx = padRows * rowPx;
+  staffInner.style.top = `${padPx - visibleLo * rowPx}px`;
+
+  // Ledger lines for notes outside the visible range could show in the padding; hide them.
+  staffInner.querySelectorAll(".bar-display").forEach((row, idx) => {
+    const ledger = row.querySelector(".show-ledger");
+    if (ledger) ledger.style.visibility = idx < visibleLo || idx > visibleHi ? "hidden" : "";
+  });
 }
 
 window.addEventListener("resize", layout);
@@ -284,7 +384,7 @@ function noteIndexFromEvent(evt) {
       evt.clientY < rect.top - margin || evt.clientY > rect.bottom + margin) {
     return null;
   }
-  const y = evt.clientY - rect.top + visibleLo * rowPx;
+  const y = evt.clientY - rect.top - padPx + visibleLo * rowPx;
   const idx = Math.round(y / rowPx) - 1;
   return Math.min(visibleHi, Math.max(visibleLo, idx));
 }
@@ -304,7 +404,7 @@ function endPointer() {
 }
 
 bar.addEventListener("pointerdown", (evt) => {
-  if (!findMode || !currentNote || activePointerId !== null) return;
+  if (!findMode || !currentCard || activePointerId !== null) return;
   evt.preventDefault();
   activePointerId = evt.pointerId;
   try { bar.setPointerCapture(evt.pointerId); } catch (err) { /* ignore */ }
@@ -313,7 +413,7 @@ bar.addEventListener("pointerdown", (evt) => {
 
 bar.addEventListener("pointermove", (evt) => {
   if (evt.pointerId !== activePointerId) return;
-  if (!currentNote) return endPointer(); // card timed out mid-drag
+  if (!currentCard) return endPointer(); // card timed out mid-drag
   showPreview(noteIndexFromEvent(evt));
 });
 
@@ -321,7 +421,7 @@ bar.addEventListener("pointerup", (evt) => {
   if (evt.pointerId !== activePointerId) return;
   const idx = noteIndexFromEvent(evt);
   endPointer();
-  if (idx !== null && findMode && currentNote) submitAnswer(idx);
+  if (idx !== null && findMode && currentCard) submitAnswer(idx);
 });
 
 bar.addEventListener("pointercancel", (evt) => {
@@ -329,27 +429,27 @@ bar.addEventListener("pointercancel", (evt) => {
 });
 
 // Any pick ends the card immediately and goes to the review. Picking the right letter in any
-// octave counts as correct.
+// octave counts as correct; accidentals never move a note to a different line or space.
 function submitAnswer(idx) {
-  const target = currentNote;
-  const correct = notes[idx].name === target.name;
+  const target = currentCard;
+  const correct = notes[idx].name === target.note.name;
   clearTimeout(revealTimeout);
   revealFindAnswer(target, correct);
 }
 
 // Find mode review, identical whether the card ended by a pick or by running out of time:
-// green or pink background, the target note as a filled head, and every other octave of the
-// same letter as a hollow head.
+// green or pink background, the target note as a filled head (with its accidental, as it would be
+// written in this key), and every other octave of the same letter as a hollow head.
 function revealFindAnswer(target, correct) {
-  currentNote = null; // card is over; ignore further input
+  currentCard = null; // card is over; ignore further input
   endPointer();
   bar.style.backgroundColor = correct ? "lightgreen" : "lightpink";
   setStreak(correct ? streak + 1 : 0);
   showFretPositions(target);
   notes.forEach((n, idx) => {
-    if (n.name !== target.name) return;
+    if (n.name !== target.note.name) return;
     touchables[idx].innerHTML = "";
-    touchables[idx].appendChild(n.id === target.id ? getNewNoteElement() : getNewWholeNoteElement());
+    touchables[idx].appendChild(n.id === target.note.id ? getCardNoteElement(target) : getNewWholeNoteElement());
   });
   scheduleNextCard();
 }
@@ -368,7 +468,7 @@ function restartCards() {
 function pauseCards() {
   clearTimeout(revealTimeout);
   clearTimeout(nextCardTimeout);
-  currentNote = null;
+  currentCard = null;
   endPointer();
 }
 
@@ -380,8 +480,10 @@ function scheduleNextCard() {
 
 function setNameDisplay(text, sizeClass) {
   noteNameElement.textContent = text;
-  noteNameElement.classList.remove("name-ready", "name-find", "name-guess");
+  noteNameElement.classList.remove("name-ready", "name-find", "name-guess", "name-long");
   noteNameElement.classList.add(sizeClass);
+  // A sharp or flat makes the name one character longer than usual.
+  if (/[\u266F\u266D]/.test(text)) noteNameElement.classList.add("name-long");
 }
 
 // every card turn
@@ -399,39 +501,122 @@ function nextCard() {
   bar.style.transition = "";
   touchables.forEach(touchable => { touchable.innerHTML = ""; });
 
-  // Only notes playable within the selected fret range. Settings validation guarantees at least one;
-  // the fallback is purely defensive.
-  const included = getIncludedNotes();
-  const playable = getPlayableNotes();
-  const noteOptions = playable.length > 0 ? playable : included;
-
-  const note = noteOptions[Math.floor(Math.random() * noteOptions.length)];
-  currentNote = note;
+  const card = pickCard();
+  currentCard = card;
 
   if (findMode) {
-    setNameDisplay(note.fullName.toUpperCase(), "name-find");
+    setNameDisplay(cardFullName(card), "name-find");
     // Out of time with no pick: same review as a wrong answer.
-    revealTimeout = setTimeout(() => revealFindAnswer(note, false), timeSeconds * 1000);
+    revealTimeout = setTimeout(() => revealFindAnswer(card, false), timeSeconds * 1000);
   } else {
-    appendChildIfEmpty(touchables[note.id], getNewNoteElement());
+    appendChildIfEmpty(touchables[card.note.id], getCardNoteElement(card));
     revealTimeout = setTimeout(() => {
-      setNameDisplay(note.name.toUpperCase(), "name-guess");
-      showFretPositions(note);
-      currentNote = null;
+      setNameDisplay(cardLetterName(card), "name-guess");
+      showFretPositions(card);
+      currentCard = null;
       scheduleNextCard();
     }, timeSeconds * 1000);
   }
 }
 
-// ---------- Guitar string/fret positions ----------
+// ---------- Keys and accidentals ----------
 
-function noteToMidi(note) {
-  const octave = parseInt(note.fullName.slice(1), 10);
-  return (octave + 1) * 12 + letterSemitones[note.name];
+function getKey() {
+  return keys.find(k => k.value === keySelect.value) || keys[0];
 }
 
-function getFretPositions(note, maxFret) {
-  const midi = noteToMidi(note);
+// The key signature as a list of { letter, type, id } in the order they're written.
+function getKeySignature() {
+  const count = getKey().count;
+  const type = count > 0 ? "sharp" : "flat";
+  const order = count > 0 ? sharpOrder : flatOrder;
+  const ids = count > 0 ? keySigSharpIds : keySigFlatIds;
+  return order.slice(0, Math.abs(count)).split("").map(letter => ({ letter, type, id: ids[letter] }));
+}
+
+// How the current key alters a letter: +1 sharp, -1 flat, 0 natural.
+function keyAlter(letter) {
+  const count = getKey().count;
+  if (count > 0) return sharpOrder.slice(0, count).includes(letter) ? 1 : 0;
+  if (count < 0) return flatOrder.slice(0, -count).includes(letter) ? -1 : 0;
+  return 0;
+}
+
+// Every way a card could be written for this staff position, given the key and the accidental
+// settings: as the key signature says (no written accidental), or with a written sharp, flat or
+// natural that changes the pitch. Only options playable within the fret range are kept
+// (with guitar hints off, every option is kept).
+function getCardOptions(note) {
+  const fromKey = keyAlter(note.name);
+  const options = [{ note, alter: fromKey, written: null }];
+  if (sharpsInput.checked && fromKey !== 1) options.push({ note, alter: 1, written: "sharp" });
+  if (flatsInput.checked && fromKey !== -1) options.push({ note, alter: -1, written: "flat" });
+  if (naturalsInput.checked && fromKey !== 0) options.push({ note, alter: 0, written: "natural" });
+  return options.filter(isPlayable);
+}
+
+// With guitar hints off the app is for any instrument, so no note is ruled out by the guitar.
+function isPlayable(card) {
+  return !guitarHintsInput.checked || getPositionsInRange(card).length > 0;
+}
+
+// Pick a staff position, then one of its written options, each with an even chance. Settings
+// validation guarantees at least one playable position; the fallback is purely defensive.
+function pickCard() {
+  const playable = getPlayableNotes();
+  if (playable.length === 0) {
+    const included = getIncludedNotes();
+    const note = included[Math.floor(Math.random() * included.length)];
+    return { note, alter: keyAlter(note.name), written: null };
+  }
+  const note = playable[Math.floor(Math.random() * playable.length)];
+  const options = getCardOptions(note);
+  return options[Math.floor(Math.random() * options.length)];
+}
+
+// "F♯", "B♭", "C"
+function cardLetterName(card) {
+  return card.note.name.toUpperCase() + accidentalSymbols[card.alter];
+}
+
+// "F♯4". The octave number follows the letter, so C♭4 sounds the same as B3.
+function cardFullName(card) {
+  return cardLetterName(card) + card.note.fullName.slice(1);
+}
+
+// E♯, B♯, C♭ and F♭ sound as a natural note; returns that note's full name, or null.
+function enharmonicNaturalName(card) {
+  const isOddSpelling = (card.alter === 1 && "eb".includes(card.note.name)) ||
+    (card.alter === -1 && "cf".includes(card.note.name));
+  if (!isOddSpelling) return null;
+  const midi = noteToMidi(card);
+  const letter = Object.keys(letterSemitones).find(l => letterSemitones[l] === midi % 12);
+  return letter.toUpperCase() + (Math.floor(midi / 12) - 1);
+}
+
+// Draw the key signature at the left of the staff (nothing for C).
+function renderKeySignature() {
+  staffInner.querySelectorAll(".keysig").forEach(el => el.remove());
+  getKeySignature().forEach((acc, i) => {
+    const glyph = getAccidentalElement(acc.type);
+    glyph.classList.add("keysig");
+    // Each glyph is 6 rows tall, centered on its note (whose center is 1 row below its top).
+    glyph.style.top = `calc(${acc.id - 2} * var(--row))`;
+    glyph.style.left = `calc(28px + ${i * keySigStep[acc.type]} * var(--row))`;
+    staffInner.appendChild(glyph);
+  });
+}
+
+// ---------- Guitar string/fret positions ----------
+
+// Cards carry the staff position (note) and its sharp/flat/natural (alter).
+function noteToMidi(card) {
+  const octave = parseInt(card.note.fullName.slice(1), 10);
+  return (octave + 1) * 12 + letterSemitones[card.note.name] + card.alter;
+}
+
+function getFretPositions(card, maxFret) {
+  const midi = noteToMidi(card);
   return guitarStrings
     .map(str => ({ ...str, fret: midi - str.openMidi }))
     .filter(pos => pos.fret >= 0 && pos.fret <= maxFret);
@@ -452,18 +637,21 @@ function getFretRange() {
   return { from: parseInt(fretFromInput.value, 10), to: parseInt(fretToInput.value, 10) };
 }
 
-function getPositionsInRange(note) {
+function getPositionsInRange(card) {
   const range = getFretRange();
-  return getFretPositions(note, parseInt(maxFretSelect.value, 10))
+  return getFretPositions(card, parseInt(maxFretSelect.value, 10))
     .filter(pos => pos.fret >= range.from && pos.fret <= range.to);
 }
 
+// Staff positions with at least one playable way to write them (see getCardOptions).
 function getPlayableNotes() {
-  return getIncludedNotes().filter(note => getPositionsInRange(note).length > 0);
+  return getIncludedNotes().filter(note => getCardOptions(note).length > 0);
 }
 
-// Returns an error message if the fret range is impossible, or null if it's fine.
+// Returns an error message if the fret range is impossible, or null if it's fine. The fret
+// settings are ignored while guitar hints are off, so they can't be wrong then.
 function validateFretSettings() {
+  if (!guitarHintsInput.checked) return null;
   const maxFret = parseInt(maxFretSelect.value, 10);
   const fromText = String(fretFromInput.value).trim();
   const toText = String(fretToInput.value).trim();
@@ -480,9 +668,17 @@ function validateFretSettings() {
   return null;
 }
 
-function showFretPositions(note) {
-  const positions = getPositionsInRange(note);
-  const label = `<strong>${note.fullName.toUpperCase()}</strong>: `;
+// The review line under the staff: the note's name and where to play it on guitar. With guitar
+// hints off, it only appears for spellings like E♯ to say which plain note they sound as.
+function showFretPositions(card) {
+  const enharmonic = enharmonicNaturalName(card);
+  const name = `<strong>${cardFullName(card)}</strong>` + (enharmonic ? ` (same as ${enharmonic})` : "");
+  if (!guitarHintsInput.checked) {
+    fretPositionsElement.innerHTML = enharmonic ? name : "";
+    return;
+  }
+  const positions = getPositionsInRange(card);
+  const label = name + ": ";
   // Each entry is kept on one line so wrapping happens only between entries.
   fretPositionsElement.innerHTML = label + positions
     .map(pos => `<span class="fret-pos">String ${pos.number} fret ${pos.fret}</span>`)
@@ -552,6 +748,26 @@ function getNewNoteElement() {
 function getNewWholeNoteElement() {
   const noteElement = document.createElement("div");
   noteElement.classList.add("whole-note-element");
+  return noteElement;
+}
+
+function getAccidentalElement(type) {
+  const holder = document.createElement("div");
+  holder.innerHTML = accidentalSvgs[type];
+  const svg = holder.firstChild;
+  svg.setAttribute("aria-hidden", "true");
+  svg.classList.add("accidental", `accidental-${type}`);
+  return svg;
+}
+
+// Filled note head with the card's written accidental (if any) to its left.
+function getCardNoteElement(card) {
+  const noteElement = getNewNoteElement();
+  if (card.written) {
+    const glyph = getAccidentalElement(card.written);
+    glyph.classList.add("note-accidental");
+    noteElement.appendChild(glyph);
+  }
   return noteElement;
 }
 
