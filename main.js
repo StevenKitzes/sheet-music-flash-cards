@@ -73,7 +73,7 @@ var revealTimeout = null;
 var nextCardTimeout = null;
 const touchables = [];
 var currentCard = null; // { note, alter, written } while a card is live; null between cards
-var padPx = 0;          // extra space above the staff so a key signature isn't clipped
+var padPx = 0;          // extra space above the staff so a key signature or accidental isn't clipped
 
 const page = document.getElementById("page");
 const bar = document.getElementById("bar");
@@ -316,9 +316,11 @@ function layout() {
   // The key signature's sharp on G (just above the top line) pokes above the staff, so when the
   // upper ledger area is hidden, leave a little room for it.
   const keySig = getKeySignature();
-  const padRows = keySig.length > 0 && visibleLo === staffLo ? 1.5 : 0;
+  const accidentalPad = getAccidentalPadRows();
+  const padRows = Math.max(keySig.length > 0 && visibleLo === staffLo ? 1.5 : 0, accidentalPad.top);
+  const padBottomRows = accidentalPad.bottom;
   // Visible region runs from the top of note lo's band to the bottom of note hi's band.
-  const visibleRows = visibleHi - visibleLo + 2 + padRows;
+  const visibleRows = visibleHi - visibleLo + 2 + padRows + padBottomRows;
 
   const barWidth = Math.min(320, window.innerWidth - 16);
   const otherContentHeight = page.offsetHeight - bar.offsetHeight;
@@ -346,6 +348,34 @@ function layout() {
     const ledger = row.querySelector(".show-ledger");
     if (ledger) ledger.style.visibility = idx < visibleLo || idx > visibleHi ? "hidden" : "";
   });
+}
+
+// How far each accidental's ink reaches above and below its note's center, in rows (from the
+// drawings in accidentalSvgs, which are 6 rows tall and centered on the note).
+const accidentalInk = {
+  sharp: { above: 2.3, below: 2.3 },
+  flat: { above: 3, below: 0.8 },
+  natural: { above: 2.2, below: 2.2 },
+};
+
+// Extra rows needed above/below the visible staff so a written accidental on a note near the
+// edge isn't clipped (e.g. a flat on F5 or a sharp on E2). Each edge already has 1 row of room
+// between the outermost note's center and the edge; 0.2 more keeps a little margin.
+function getAccidentalPadRows() {
+  const pad = { top: 0, bottom: 0 };
+  for (let idx = visibleLo; idx <= visibleHi; idx++) {
+    const fromKey = keyAlter(notes[idx].name);
+    const written = [];
+    if (sharpsInput.checked && fromKey !== 1) written.push("sharp");
+    if (flatsInput.checked && fromKey !== -1) written.push("flat");
+    if (naturalsInput.checked && fromKey !== 0) written.push("natural");
+    written.forEach(type => {
+      const ink = accidentalInk[type];
+      pad.top = Math.max(pad.top, ink.above - (idx - visibleLo + 1) + 0.2);
+      pad.bottom = Math.max(pad.bottom, ink.below - (visibleHi - idx + 1) + 0.2);
+    });
+  }
+  return pad;
 }
 
 window.addEventListener("resize", layout);
